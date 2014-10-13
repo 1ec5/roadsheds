@@ -1,0 +1,66 @@
+{
+  "bounds": [
+    -84.8592,
+    38.8775,
+    -84.1087,
+    39.4715
+  ],
+  "center": [
+    -84.5089,
+    39.0958,
+    12
+  ],
+  "format": "png",
+  "interactivity": {
+    "layer": "gridicule",
+    "template_teaser": "{{{network}}} {{{ref}}} {{{modifier}}}",
+    "fields": [
+      "network",
+      "ref",
+      "modifier",
+      "id"
+    ]
+  },
+  "minzoom": 10,
+  "maxzoom": 13,
+  "srs": "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over",
+  "Stylesheet": [
+    "style.mss"
+  ],
+  "Layer": [
+    {
+      "extent": [
+        -84.84299184892329,
+        38.8750114088366,
+        -84.12100175152646,
+        39.470990456334306
+      ],
+      "Datasource": {
+        "type": "postgis",
+        "table": "(\n  SELECT ((x + 9444678) / 2000 * 100 + (y - 4703783) / 2000) AS id, x, y, point, distance,\n         substring(ref FROM '\\w+[ -](\\d+\\w*)') AS ref,\n         char_length(substring(ref FROM '\\w+[ -](\\d+\\w*)')) AS ref_length,\n         substring(ref FROM '(\\w+)[ -]\\d+\\w*') AS network,\n         substring(ref FROM '\\w+[ -]\\d+\\w* (\\w+)') AS modifier\n  FROM (\n    WITH index AS (\n      SELECT grid.point, grid.x, grid.y,\n             roads.ref, (grid.point <-> roads.way) * roads.priority AS distance\n      FROM (\n        SELECT x, y, ST_POINT(x::float,y::float) AS point\n        FROM generate_series(-9444678, -9364307, 2000) AS x,\n             generate_series(4703783, 4789363, 2000) AS y\n        WHERE ST_POINT(x::float,y::float) && !bbox!\n      ) AS grid, (\n        SELECT ref, way, priority\n        FROM planet_osm_line, (\n          VALUES ('motorway', 0.1), ('trunk', 0.5), ('primary', 0.8), ('secondary', 1)\n        ) AS priorities (highway, priority)\n        WHERE (planet_osm_line.highway IN ('motorway', 'trunk', 'primary', 'secondary'))\n          AND ref IS NOT NULL AND way && !bbox!\n      ) AS roads\n      WHERE (grid.point <-> roads.way) * roads.priority <= 2000\n    )\n    SELECT *, rank() OVER (PARTITION BY x, y ORDER BY distance) AS rank\n    FROM index\n  ) AS tops\n  WHERE rank = 1\n) AS gridicule",
+        "key_field": "id",
+        "geometry_field": "point",
+        "extent_cache": "auto",
+        "extent": "-9444678.65,4703783.81,-9364307.08,4789363.23",
+        "dbname": "gis",
+        "id": "gridicule",
+        "project": "gridicule",
+        "srs": "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over"
+      },
+      "id": "gridicule",
+      "class": "",
+      "srs-name": "900913",
+      "srs": "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over",
+      "advanced": {},
+      "name": "gridicule",
+      "geometry": "point"
+    }
+  ],
+  "scale": 1,
+  "metatile": 2,
+  "name": "Routesheds",
+  "description": "A metropolitan area reimagined as a grid of highway reassurance markers. Each route shield in the grid indicates the nearest Interstate, U.S., or state route, with a bias towards highways and against surface streets.",
+  "attribution": "Map data © OpenStreetMap contributors",
+  "version": "1.0.0",
+  "legend": ""
+}
